@@ -364,7 +364,8 @@ var mipsInstDict =
 }
 
 const mispInstHints = document.body.insertAdjacentHTML('beforeend', `
-<table id="mips-inst-hint">
+<div id="mips-inst-hint">
+<table>
     <tr>
         <td colspan="2">
         <span class=i></span>
@@ -372,7 +373,7 @@ const mispInstHints = document.body.insertAdjacentHTML('beforeend', `
         </td>
     </tr>
     <tr>
-        <td>Syntax</td>
+        <td style="width:80px">Syntax</td>
         <td>
             <code class=s></code>
             <code class=a></code>
@@ -391,25 +392,32 @@ const mispInstHints = document.body.insertAdjacentHTML('beforeend', `
     </tr>
     <tr>
         <td>Encoding</td>
-        <td class="e"></td>
+        <td>
+            <div class=e></div>
+            <div class=l></div>
+            <div class=v></div>
+        </td>
     </tr>
 </table>
+</div>
 `);
 // inject style
 document.head.insertAdjacentHTML('beforeend', `
 <style>
     #mips-inst-hint {
         position: absolute;
-        top: 0;
-        left: 0;
         display: none;
         font-size: 10pt;
         background-color: #fff;
         border: 1px solid #000;
         padding: 10px;
         opacity: 0.98;
-        border-collapse: collapse;
         z-index: 9999;
+        width: 640px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
         .i {
             display: none;
         }
@@ -427,12 +435,22 @@ document.head.insertAdjacentHTML('beforeend', `
         .o {
             color: blue;
         } 
-        .m,.a {
+        .m,.a,.l {
             display: block;
             color: purple;
             font-weight: bold;
         }
         span.cht { display: none; }
+        .e span, .v span {
+            font-family: monospace;
+        }
+        
+        .b1 { color: darkred; }
+        .b2 { color: orange; }
+        .b3 { color: #882; }
+        .b4 { color: darkgreen; }
+        .b5 { color: blue; }
+        .b6 { color: purple; }
     }
     .show-cht #mips-inst-hint span.cht { display: block; }
 </style>
@@ -461,6 +479,13 @@ function mapRegVar(s) {
             });
     }
     return s.replace(/\$[a-z0-9]+\b/g, m => regMapper[m] || m);
+}
+function markBinStrColor(binStr) {
+    const m = binStr.match(/(\S{4} \S{2})(\S{2} \S{3})(\S{1} \S{4})( \S{4} \S{1})(\S{3} \S{2})(\S{2} \S{4})/);
+    return `<span class=b1>${m[1]}</span><span class=b2>${m[2]}</span><span class=b3>${m[3]}</span><span class=b4>${m[4]}</span><span class=b5>${m[5]}</span><span class=b6>${m[6]}</span>`;
+}
+function convHexToBin(hexStr) {
+    return hexStr.split('').map(c => parseInt(c, 16).toString(2).padStart(4, '0')).join(' ');
 }
 
 function showMipsInstHint(target) {
@@ -498,6 +523,11 @@ function showMipsInstHint(target) {
         }
         hintEl.querySelector('.m').innerText = mapRegVar(mappedOperation);
         hintEl.querySelector('.a').innerText = mapRegVar(lineOfCode);
+
+        hintEl.querySelector('.e').innerHTML = markBinStrColor(hint.e);
+        hintEl.querySelector('.l').innerText = lineOfCode;
+        const hexCode = target.parentElement.parentElement.querySelector('.hljs-number').textContent.trim();
+        hintEl.querySelector('.v').innerHTML = hexCode ? markBinStrColor(convHexToBin(hexCode)) + ` [${hexCode}]` : '';
         hintEl.style.left = x + 'px';
         if (y < hintEl.getBoundingClientRect().height) {
             y = target.getBoundingClientRect().bottom + 6;
